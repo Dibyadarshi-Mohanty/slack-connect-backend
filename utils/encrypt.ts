@@ -44,10 +44,3 @@ export const decrypt = (encryptedBase64: string): string => {
   }
 };
 
-if (require.main === module) {
-  const testText = "hello world";
-  const encrypted = encrypt(testText);
-  console.log("Encrypted:", encrypted);
-  const decrypted = decrypt(encrypted);
-  console.log("Decrypted:", decrypted);
-}
