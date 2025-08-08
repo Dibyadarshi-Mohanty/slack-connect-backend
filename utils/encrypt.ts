@@ -1,26 +1,39 @@
 import crypto from "crypto";
 
 const algorithm = "aes-256-cbc";
-const key = crypto.createHash("sha256").update(String(process.env.ENCRYPTION_SECRET)).digest(); // 32-byte buffer
 
-export const encrypt = (text: string) => {
+const key = crypto.createHash("sha256")
+  .update(String(process.env.ENCRYPTION_SECRET || "default_secret"))
+  .digest(); // 32 bytes
+
+export const encrypt = (text: string): string => {
   const iv = crypto.randomBytes(16); // 16-byte IV
   const cipher = crypto.createCipheriv(algorithm, key, iv);
-  let encrypted = cipher.update(text, "utf8", "hex");
-  encrypted += cipher.final("hex");
-  return iv.toString("hex") + ":" + encrypted;
+  const encryptedBuffer = Buffer.concat([
+    cipher.update(text, "utf8"),
+    cipher.final()
+  ]);
+
+  const combined = Buffer.concat([iv, encryptedBuffer]);
+  return combined.toString("base64");
 };
 
-export const decrypt = (text: string) => {
-  const parts = text.split(":");
-  const ivHex = parts.shift();
-  if (!ivHex) {
-    throw new Error("Invalid encrypted text: missing IV");
+
+export const decrypt = (encryptedBase64: string): string => {
+  const combined = Buffer.from(encryptedBase64, "base64");
+
+  if (combined.length < 17) {
+    throw new Error("Invalid encrypted text: too short");
   }
-  const iv = Buffer.from(ivHex, "hex");
-  const encryptedText = parts.join(":");
+
+  const iv = combined.slice(0, 16); 
+  const encryptedText = combined.slice(16); 
+
   const decipher = crypto.createDecipheriv(algorithm, key, iv);
-  let decrypted = decipher.update(encryptedText, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
+  const decryptedBuffer = Buffer.concat([
+    decipher.update(encryptedText),
+    decipher.final()
+  ]);
+
+  return decryptedBuffer.toString("utf8");
 };
