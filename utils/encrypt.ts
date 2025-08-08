@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 const algorithm = "aes-256-cbc";
-const key = crypto.createHash("sha256").update(String(process.env.ENCRYPTION_SECRET)).digest("base64");
+const key = crypto.createHash("sha256").update(String(process.env.ENCRYPTION_SECRET)).digest("base64").substring(0, 32);
 
 export const encrypt = (text: string) => {
   const iv = crypto.randomBytes(16);
