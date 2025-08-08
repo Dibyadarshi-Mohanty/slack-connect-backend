@@ -1,18 +1,14 @@
-import { TokenModel } from "./models/token";
-import { decrypt } from "./utils/encrypt";
-import { setSlackAccessToken } from "./tokenStore";
+import { TokenModel } from './models/token';
+import { decrypt } from './utils/encrypt';
+import { setSlackAccessToken } from './tokenStore';
 
 export async function preloadSlackToken() {
-  const record = await TokenModel.findOne();
+  const record = await TokenModel.findOne(); 
   if (record?.access_token) {
-    try {
-      const token = decrypt(record.access_token);
-      setSlackAccessToken(token);
-      console.log("🔑 Slack token preloaded into memory");
-    } catch (err) {
-      console.error("❌ Failed to decrypt Slack token:", err);
-    }
+    const token = decrypt(record.access_token);
+    setSlackAccessToken(token);
+    console.log("🔑 Slack token preloaded into memory");
   } else {
-    console.warn("⚠️ No token found in DB. Please authenticate first.");
+    console.warn("⚠️ No token found in DB, scheduler may not work until connected");
   }
 }

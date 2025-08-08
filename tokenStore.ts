@@ -1,7 +1,9 @@
-let slackAccessToken: string | null = null;
+export let slackAccessToken: string | null = null;
 
-export const setSlackAccessToken = (token: string) => {
+export function setSlackAccessToken(token: string) {
   slackAccessToken = token;
-};
+}
 
-export const getSlackAccessToken = () => slackAccessToken;
+export function getSlackAccessToken(): string | null {
+  return slackAccessToken;
+}
