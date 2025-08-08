@@ -1,46 +1,26 @@
 import crypto from "crypto";
 
 const algorithm = "aes-256-cbc";
+const key = crypto.createHash("sha256").update(String(process.env.ENCRYPTION_SECRET)).digest("base64");
 
-const secret = process.env.ENCRYPTION_SECRET;
-if (!secret) throw new Error("ENCRYPTION_SECRET is not set");
-
-const key = crypto.createHash("sha256").update(secret).digest(); // 32 bytes
-
-
-export const encrypt = (text: string): string => {
-  const iv = crypto.randomBytes(16); // 16-byte IV
+export const encrypt = (text: string) => {
+  const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(algorithm, key, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(text, "utf8"),
-    cipher.final()
-  ]);
-
-  const combined = Buffer.concat([iv, encrypted]);
-  return combined.toString("base64");
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  return iv.toString("hex") + ":" + encrypted;
 };
 
-export const decrypt = (encryptedBase64: string): string => {
-  try {
-    const combined = Buffer.from(encryptedBase64, "base64");
-
-    if (combined.length < 17) {
-      throw new Error("Invalid encrypted text: too short");
-    }
-
-    const iv = combined.slice(0, 16); 
-    const encryptedText = combined.slice(16); 
-
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedText),
-      decipher.final()
-    ]);
-
-    return decrypted.toString("utf8");
-  } catch (err) {
-    console.error("Decryption failed:", err);
-    throw new Error("Failed to decrypt: invalid input or mismatched key/IV");
+export const decrypt = (text: string) => {
+  const parts = text.split(":");
+  const ivHex = parts.shift();
+  if (!ivHex) {
+    throw new Error("Invalid encrypted text: missing IV");
   }
+  const iv = Buffer.from(ivHex, "hex");
+  const encryptedText = parts.join(":");
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  let decrypted = decipher.update(encryptedText, "hex", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
 };
-
